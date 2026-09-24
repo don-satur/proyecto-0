@@ -1,57 +1,77 @@
 from datetime import datetime
 
 def separar_viento(campo_viento: str) -> tuple:
-    partes = campo_viento.strip().split() #elimino los espacios innecesarios y divido la lista
+    partes = campo_viento.strip().split()
 
-    #verifico si hay elementos y si ese primer elemento es "calma"
     if len(partes) > 0 and partes[0].lower() == "calma":
         return ("Calma", 0.0)
     
-    direccion = " ".join(partes[:-1])  #junta todo excepto el último elemento como dirección
-    velocidad = float(partes[-1])     #la velocidad es el último elemento
+    direccion = " ".join(partes[:-1])
+    velocidad = float(partes[-1]) 
     return (direccion, velocidad)
 
 def leer_observaciones(ruta: str) -> dict:
-    obervaciones = {}
+    observaciones = {}
+    meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+    ]
 
-    with open(ruta,"r", encoding="cp1252") as archivo:
+    with open(ruta, "r", encoding="cp1252") as archivo:
 
         for linea in archivo:
-            campos = linea.strip().split(";") #aisla cada renglón y delimita que un renglón termina cuando hay ";"
+            campos = linea.strip().split(";")
 
             if len(campos) == 10:
-                ciudad = campos[0].strip() #obtiene el nombre de la ciudad
-
-                direccion, velocidad = separar_viento(campos[8]) #separo el campo viento en direción y velocidad
+                ciudad = campos[0].strip()
+                direccion, velocidad = separar_viento(campos[8])
 
                 sen_term_texto = campos[6].strip()
-                sensacion = None if sen_term_texto == "No se calcula" else float(sen_term_texto) # si dice "no se calcula" le asigna "None"
+                sensacion = None if sen_term_texto == "No se calcula" else float(sen_term_texto)
 
                 humedad_texto = campos[7].strip().replace("%", "").strip()
                 humedad_num = float(humedad_texto) if humedad_texto else 0.0
 
-                obervaciones[ciudad] = {
-                    "fecha":campos[1].strip(),                          #fecha de la observación
-                    "hora":campos[2].strip(),                           #hora de la observación
-                    "condicion":campos[3].strip(),                      #estado de tiempo (nublado,soleado,etc)
-                    "visibilidad":campos[4].strip(),                    #visibilidad en km
-                    "temperatura":float(campos[5].strip()),             #temperatura pasada a decimal
-                    "sensacion_termica": sensacion,                     #sensción térmica
-                    "humedad": humedad_num,                             #humedad
-                    "direccion_viento":direccion,                       #dirección del viento
-                    "velocidad_viento": velocidad,                      #velocidad del viento
-                    "presion":campos[9].strip().strip("/").strip()      #presión atmosférica
+                fecha_texto = campos[1].strip()
+                hora_texto = campos[2].strip()
+
+                partes_f = fecha_texto.replace("/", "-").split("-")
+                dia = int(partes_f[0].strip())
+                
+                mes_raw = partes_f[1].strip().lower()
+                num_mes = meses.index(mes_raw) + 1 if mes_raw in meses else int(mes_raw)
+                
+                anio = int(partes_f[2].strip())
+
+                partes_h = hora_texto.split(":")
+                hora = int(partes_h[0].strip())
+                minuto = int(partes_h[1].strip()) if len(partes_h) > 1 else 0
+
+                fecha_y_hora = datetime(anio, num_mes, dia, hora, minuto)
+
+                observaciones[ciudad] = {
+                    "fecha_y_hora": fecha_y_hora,
+                    "condicion": campos[3].strip(),
+                    "visibilidad": campos[4].strip(),
+                    "temperatura": float(campos[5].strip()),
+                    "sensacion_termica": sensacion,
+                    "humedad": humedad_num,
+                    "direccion_viento": direccion,
+                    "velocidad_viento": velocidad,
+                    "presion": campos[9].strip().strip("/").strip()
                 }
-    return obervaciones
+
+    return observaciones
 
 def cantidad_ciudades(observaciones: dict) -> int:
     return len(observaciones)
 
+
+
 def cantidad_ciudades_completas(observaciones: dict) -> int:
     completas = 0
-    for datos_ciudad in observaciones.values(): #recorre los "diccionarios internos"
+    for datos_ciudad in observaciones.values():
 
-        if datos_ciudad["sensacion_termica"] is not None: #si la sensación térmica no es None, la ciudad está completa
+        if datos_ciudad["sensacion_termica"] is not None:
             completas += 1
 
     return completas
@@ -59,19 +79,19 @@ def cantidad_ciudades_completas(observaciones: dict) -> int:
 def top_n_ciudades(observaciones: dict, campo: str, n: int, descendente: bool = True) -> list:
     lista_ordenada = []
     
-    for ciudad in observaciones: #recorre cada ciudad
-        valor = observaciones[ciudad][campo] #obtiene el campo solicitado de la ciudad ("temperatura", "velocidad_viento", etc)
+    for ciudad in observaciones:
+        valor = observaciones[ciudad][campo]
 
-        if valor is not None: #filtra valores nulos
-            lista_ordenada.append((valor, ciudad)) #agrega la tupla (valor, ciudad) a la lista
+        if valor is not None:
+            lista_ordenada.append((valor, ciudad))
             
-    lista_ordenada.sort(reverse=descendente) # ordena la lista si, si descendiente=True ordena de mayor a menor y viceversa
-    
+    lista_ordenada.sort(reverse=descendente) 
+
     resultado = []
     for valor, ciudad in lista_ordenada[:n]:
-        resultado.append((ciudad, valor)) #invierte la tupla a (ciudad, valor) para tener una estructura más clara
+        resultado.append((ciudad, valor)) 
         
-    return resultado #devuelve la lista de los primeros N resultados
+    return resultado
 
 
 def horarios_reportados(observaciones: dict) -> list:
@@ -84,7 +104,6 @@ def horarios_reportados(observaciones: dict) -> list:
 
 
 def mostrar_resumen(observaciones: dict) -> None:
-    """Imprime por pantalla el resumen con todas las características calculadas."""
 
     fechas = [datos["fecha_y_hora"] for datos in observaciones.values() if datos.get("fecha_y_hora")]
 
