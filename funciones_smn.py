@@ -73,60 +73,51 @@ def top_n_ciudades(observaciones: dict, campo: str, n: int, descendente: bool = 
         
     return resultado #devuelve la lista de los primeros N resultados
 
+
+def horarios_reportados(observaciones: dict) -> list:
+    horarios = {
+        datos["fecha_y_hora"].strftime("%H:%M") 
+        for datos in observaciones.values() 
+        if datos.get("fecha_y_hora")
+    }
+    return sorted(list(horarios))
+
+
 def mostrar_resumen(observaciones: dict) -> None:
-    fechas_ordenables = [] #en esta lista se guardarán la fechas
+    """Imprime por pantalla el resumen con todas las características calculadas."""
 
-    meses = [
-    "enero", "febrero", "marzo", "abril", "mayo", "junio",
-    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-]
-    for ciudad in observaciones: #en este for se recorren las ciudades para extraer la fecha de observación
-        f = observaciones[ciudad]["fecha"]
-        partes = f.replace("/", "-").split("-") #si las fechas tienen "/" las remplaza por "-" para poder dividirlas en dia-mes-año
+    fechas = [datos["fecha_y_hora"] for datos in observaciones.values() if datos.get("fecha_y_hora")]
 
-        if len(partes) == 3: #verifica que l fecha tenga día, mes y año
-            dia = int(partes[0].strip())        #convierte el dia en entero
-            mes = partes[1].strip().lower()     #obtiene el mes en minúsculas
-            anio = int(partes[2].strip())       #convierte el año a entero
-
-            if mes in meses:        #este if obtiene el número del mes ya sea que esté en letras o en número
-                num_mes = meses.index(mes) + 1
-            else:
-                num_mes = int(mes)
-
-            fechaa= datetime(anio, num_mes, dia)
-            fechas_ordenables.append((fechaa,f))
-
-    if fechas_ordenables: #este if determina las fechas de inicio y finalización de las mediciones
-        fechas_ordenables.sort()
-        fecha_inicio = fechas_ordenables[0][1]
-        fecha_fin = fechas_ordenables[-1][1]
+    if fechas:
+        fecha_inicio = min(fechas).strftime("%d/%m/%Y %H:%M")
+        fecha_fin = max(fechas).strftime("%d/%m/%Y %H:%M")
         periodo_texto = f"periodo de observaciones: desde {fecha_inicio} hasta {fecha_fin}"
     else:
         periodo_texto = "periodo de observaciones: no disponible"
 
     print("===== RESUMEN DE OBSERVACIONES =====")
     print(periodo_texto)
-    print("total de ciudades procesadas: ",cantidad_ciudades(observaciones))
+    print("total de ciudades procesadas: ", cantidad_ciudades(observaciones))
     print("ciudades con datos completos: ", cantidad_ciudades_completas(observaciones))
+    print("horarios reportados: ", ", ".join(horarios_reportados(observaciones)))
     print("-" * 40)
 
     print("top 5 temperaturas más altas: ")
-    for ciudad, temp in top_n_ciudades(observaciones, "temperatura",5, descendente=True):
-        print(f"  -{ciudad}:  {temp}  °C")
+    for ciudad, temp in top_n_ciudades(observaciones, "temperatura", 5, descendente=True):
+        print(f"  -{ciudad}: {temp} °C")
 
     print("\ntop 5 temperaturas más bajas:")
-    for ciudad, temp in top_n_ciudades(observaciones,"temperatura", 5, descendente=False):
-        print(f"  -{ciudad}:  {temp}  °C")
+    for ciudad, temp in top_n_ciudades(observaciones, "temperatura", 5, descendente=False):
+        print(f"  -{ciudad}: {temp} °C")
 
     print("\ntop 5 vientos más fuertes:")
-    for ciudad, viento in top_n_ciudades(observaciones,"velocidad_viento", 5,descendente=True):
-        print(f"  -{ciudad}:  {viento}  km/h")
+    for ciudad, viento in top_n_ciudades(observaciones, "velocidad_viento", 5, descendente=True):
+        print(f"  -{ciudad}: {viento} km/h")
 
     print("\ntop 5 mayores humedades registradas:")
     for ciudad, hum in top_n_ciudades(observaciones, "humedad", 5, descendente=True):
-        print(f"  -{ciudad}:  {int(hum)}%")
+        print(f"  -{ciudad}: {int(hum)}%")
 
     print("\ntop 5 menores humedades registradas:")
     for ciudad, hum in top_n_ciudades(observaciones, "humedad", 5, descendente=False):
-        print(f"  -{ciudad}:  {int(hum)}%")
+        print(f"  -{ciudad}: {int(hum)}%")
