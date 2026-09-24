@@ -12,9 +12,6 @@ def separar_viento(campo_viento: str) -> tuple:
 
 def leer_observaciones(ruta: str) -> dict:
     observaciones = {}
-    meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
-    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-    ]
 
     with open(ruta, "r", encoding="cp1252") as archivo:
 
@@ -31,22 +28,7 @@ def leer_observaciones(ruta: str) -> dict:
                 humedad_texto = campos[7].strip().replace("%", "").strip()
                 humedad_num = float(humedad_texto) if humedad_texto else 0.0
 
-                fecha_texto = campos[1].strip()
-                hora_texto = campos[2].strip()
-
-                partes_f = fecha_texto.replace("/", "-").split("-")
-                dia = int(partes_f[0].strip())
-                
-                mes_raw = partes_f[1].strip().lower()
-                num_mes = meses.index(mes_raw) + 1 if mes_raw in meses else int(mes_raw)
-                
-                anio = int(partes_f[2].strip())
-
-                partes_h = hora_texto.split(":")
-                hora = int(partes_h[0].strip())
-                minuto = int(partes_h[1].strip()) if len(partes_h) > 1 else 0
-
-                fecha_y_hora = datetime(anio, num_mes, dia, hora, minuto)
+                fecha_y_hora = parsear_fecha_hora(campos[1], campos[2])
 
                 observaciones[ciudad] = {
                     "fecha_y_hora": fecha_y_hora,
@@ -140,3 +122,25 @@ def mostrar_resumen(observaciones: dict) -> None:
     print("\ntop 5 menores humedades registradas:")
     for ciudad, hum in top_n_ciudades(observaciones, "humedad", 5, descendente=False):
         print(f"  -{ciudad}: {int(hum)}%")
+
+
+def parsear_fecha_hora(fecha: str, hora: str) -> datetime:
+    meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+        ]
+
+    partes_fecha = fecha.strip().replace("/", "-").split("-")
+    dia = int(partes_fecha[0].strip())
+
+    mes = partes_fecha[1].strip().lower()
+    if mes in meses:
+        num_mes = meses.index(mes) + 1
+    else:
+        num_mes = int(mes)
+
+    anio = int(partes_fecha[2].strip())
+
+    partes_hora = hora.strip().split(":")
+    h = int(partes_hora[0].strip())
+    m = int(partes_hora[1].strip()) if len(partes_hora) > 1 else 0
+    return datetime(anio, num_mes, dia, h, m)
